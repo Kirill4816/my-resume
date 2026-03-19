@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+    networks:
+      - kafka-network
+
+  producer:
+    build:
+      context: ./src
+      dockerfile: dockerfile_producer
+    container_name: producer
+    environment:
+      KAFKA_BROKER: kafka:9092
+      RAW_TOPIC: raw_events
+    networks:
+      - kafka-network
+    command: python web_simulator.py
+    restart: on-failure
+
+  processor:
+    build:
+      context: ./src
+      dockerfile: dockerfile_processor
+    container_name: processor
+    environment:
+      KAFKA_BROKER: kafka:9092
+      RAW_TOPIC: raw_events
+      ENRICHED_TOPIC: enriched_events
+      ALERTS_TOPIC: alerts
+    networks:
+      - kafka-network
+    command: python event_processor.py
+    restart: on-failure
+
+  visualizer:
+    build:
+      context: ./src
+      dockerfile: dockerfile_visualizer
+    container_name: visualizer
+    environment:
+      KAFKA_BROKER: kafka:9092
+      ENRICHED_TOPIC: enriched_events
+      ALERTS_TOPIC: alerts
+    networks:
+      - kafka-network
+    command: python visualizer.py
+    restart: on-failure
+
+networks:
+  kafka-network:
+    driver: bridge
