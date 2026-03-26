@@ -61,6 +61,8 @@ Credit Card Fraud Detection c учетом сильного дизбаланса
 Используемые технологии:
 
 Python, NumPy, pandas, scikit-learn — предобработка и классические ML‑методы.
+
 XGBoost, Optuna — бустинг и подбор гиперпараметров для задачи фрода.
+
 PyTorch, torchvision (ResNet18), CUDA — сверточные сети и transfer learning для изображений
 
